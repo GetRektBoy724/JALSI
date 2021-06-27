@@ -4,7 +4,9 @@ JALSI is short for Just Another Lame Shellcode Injector.JALSI can inject shellco
 # Usage
 Simply load the pre-compiled DLL or add the code function and call the LocalInject,RemoteInject,or QueueAPCInject function from the JALSI class. You can load the pre-compiled DLL on Powershell with Reflection.Assembly too! This code uses C# 5,so it can be compiled with the built-in CSC from Windows 10.
 ### Parameters
-Look at the code,dont be a skid.
+- `RemoteInject(int TargetProcessID, byte[] shellcode)`
+- `LocalInject(byte[] shellcode)`
+- `QueueAPCInject(string PathToExecutableForProcess, byte[] shellcode)`
 ### RemoteInject Function 
 Inject shellcode to a remote process using `NtOpenProcess/NtAllocateVirtualMemory/NtWriteVirtualMemory/NtProtectVirtualMemory(preventing RWX)/NtCreateThreadEx` pattern.
 ![JALSIRemoteInject](https://user-images.githubusercontent.com/41237415/123536377-1d13e580-d754-11eb-9511-f1a10aa8444f.png)
