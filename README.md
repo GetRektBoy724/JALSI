@@ -21,7 +21,7 @@ Memory Protection settings used : RWX
 
 
 ### QueueAPCInject Function 
-Inject shellcode to a newly spawned process using `CreateProcess/NtAllocateVirtualMemory/NtWriteVirtualMemory/NtProtectVirtualMemory(preventing RWX)/NtQueueApcThread/NtAlertResumeThread` pattern
+Inject shellcode to a newly spawned process using `CreateProcess/NtAllocateVirtualMemory/NtWriteVirtualMemory/NtProtectVirtualMemory(preventing RWX)/NtQueueApcThread/NtAlertResumeThread` pattern.
 Memory Protection settings used : RW,RX
 
 ![JALSIQueueAPCInject](https://user-images.githubusercontent.com/41237415/123536357-0a99ac00-d754-11eb-8573-218a8b1fa777.png)
