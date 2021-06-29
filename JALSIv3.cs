@@ -1330,10 +1330,6 @@ public class DInvokeCore {
 
 public class JALSI {
 
-    // Ple-please forgive me from using P/Invoke,ma-master
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool CreateProcess(string lpApplicationName, string lpCommandLine, ref DInvokeCore.SECURITY_ATTRIBUTES lpProcessAttributes, ref DInvokeCore.SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, DInvokeCore.CreationFlags dwCreationFlags, IntPtr lpEnvironment, string lpCurrentDirectory, [In] ref DInvokeCore.STARTUPINFOEX lpStartupInfo, out DInvokeCore.PROCESS_INFORMATION lpProcessInformation);
-
     // anti RWX team
     public static UInt32 PAGE_READWRITE = 0x04; 
     public static UInt32 PAGE_EXECUTE_READ = 0x20;
