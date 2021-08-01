@@ -26,4 +26,7 @@ Memory Protection settings used : RW,RX
 
 ![JALSIQueueAPCInject](https://user-images.githubusercontent.com/41237415/123792236-9a815680-d90a-11eb-844c-d2a5458d3cad.png)
 
+# To-Do
+- Implement [TripleS](https://github.com/GetRektBoy724/TripleS)
+
 
